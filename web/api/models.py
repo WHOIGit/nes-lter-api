@@ -12,25 +12,38 @@ class GeoLocatedObject(models.Model):
 
     geolocations = GenericRelation('GeoLocation')
 
-    def set_coordinates(self, latitude, longitude, start_time, end_time):
+    def set_coordinates(self, latitude, longitude, depth, start_time, end_time, comments=None):
         GeoLocation.objects.create(
             content_object=self,
             coordinates=Point(longitude, latitude),
+            depth=depth,
+            comments=comments,
             start_timestamp=start_time,
             end_timestamp=end_time
         )
 
     def get_coordinates_at_time(self, given_time):
         return GeoLocation.get_coordinates_at_time(self, given_time)
+    
+    def unset_coordinates(self, given_time):
+        self.geolocations.filter(
+            start_timestamp__lte=given_time,
+            end_timestamp__gte=given_time
+        ).delete()
 
 class Station(GeoLocatedObject):
     name = models.CharField(max_length=255)
+
+    def __str__(self) -> str:
+        return self.name
 
 class GeoLocation(models.Model):
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
     coordinates = gis_models.PointField()
+    depth = models.FloatField(null=True)
+    comments = models.TextField(null=True)
     start_timestamp = models.DateTimeField()
     end_timestamp = models.DateTimeField()
 
@@ -41,15 +54,29 @@ class GeoLocation(models.Model):
             start_timestamp__lte=given_time,
             end_timestamp__gte=given_time
         )
-        return [(obj.coordinates.y, obj.coordinates.x, obj.start_timestamp, obj.end_timestamp) for obj in queryset]
+        return [{
+            'latitude': obj.coordinates.y,
+            'longitude': obj.coordinates.x,
+            'depth': obj.depth,
+            'comments': obj.comments,
+            'start_timestamp': obj.start_timestamp,
+            'end_timestamp': obj.end_timestamp
+        } for obj in queryset]
 
 def find_nearest(model_class, latitude, longitude, given_time):
     point = Point(longitude, latitude, srid=4326)  # WGS84
     queryset = model_class.objects.annotate(
-        distance=Distance('geolocations__coordinates', point)
+        distance=Distance('geolocations__coordinates', point),
+        comments=models.F('geolocations__comments'),
     ).filter(
         geolocations__start_timestamp__lte=given_time,
         geolocations__end_timestamp__gte=given_time
     ).order_by('distance')
 
-    return queryset.first() if queryset.exists() else None
+    nearest = queryset.first() if queryset.exists() else None
+
+    return {
+        'station': nearest,
+        'distance': nearest.distance.m,
+        'comments': nearest.comments
+    } if nearest else None
