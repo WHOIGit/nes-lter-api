@@ -63,3 +63,62 @@ class GeoLocation(models.Model):
             'start_timestamp': obj.start_timestamp,
             'end_timestamp': obj.end_timestamp
         } for obj in queryset]
+
+
+class Organization(models.Model):
+    name = models.TextField() # e.g., "Woods Hole Oceanographic Institution"
+    acronym = models.CharField(max_length=32, null=True) # e.g., "WHOI"
+
+    def __str__(self) -> str:
+        return self.acronym if self.acronym else self.name
+
+
+class Person(models.Model):
+    full_name = models.TextField() # e.g., "Robert Ballard"
+    affiliation = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True)
+
+    def __str__(self) -> str:
+        return self.full_name
+
+
+class Role(models.Model):
+    name = models.CharField(max_length=128) # e.g., "Chief Scientist"
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Vessel(models.Model):
+    designation = models.CharField(max_length=64) # abbreviation e.g., "AR" for "Armstrong"
+    name = models.TextField(null=True) # name of vessel e.g., "R/V Neil Armstrong"
+    nickname = models.CharField(max_length=64, null=True) # nickname e.g., "Armstrong"
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True)
+
+    def __str__(self) -> str:
+        return self.nickname if self.nickname else self.name
+    
+
+class Cruise(models.Model):
+    vessel = models.ForeignKey(Vessel, on_delete=models.CASCADE)
+    name = models.CharField(max_length=64) # e.g., "AR70b"
+    start_timestamp = models.DateTimeField()
+    end_timestamp = models.DateTimeField(null=True)
+    comments = models.TextField(null=True)
+
+    def __str__(self) -> str:
+        return self.name
+    
+
+class Cast(models.Model):
+    cruise = models.ForeignKey(Cruise, on_delete=models.CASCADE, related_name="casts")
+    sort_key = models.IntegerField() # e.g., 1
+    name = models.CharField(max_length=64) # e.g., "1b"
+    location = gis_models.PointField()
+    max_depth = models.FloatField(null=True)
+    start_timestamp = models.DateTimeField()
+    end_timestamp = models.DateTimeField(null=True)
+    comments = models.TextField(null=True)
+
+    def __str__(self) -> str:
+        return f"{self.cruise.name} {self.name}"
+    
