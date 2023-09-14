@@ -1,8 +1,12 @@
+from typing import Type
+
 from django.contrib.gis.geos import Point
 from django.contrib.gis.db.models.functions import Distance
 
 from dateutil import parser
 from dateutil.tz import tzutc
+
+from api.models import GeoLocatedObject
 
 
 def parse_datetime(iso_string):
@@ -16,7 +20,7 @@ def parse_datetime(iso_string):
         return None
 
 
-def find_nearest(model_class, latitude, longitude, given_time):
+def find_nearest(model_class: Type[GeoLocatedObject], latitude, longitude, given_time):
     point = Point(longitude, latitude, srid=4326)  # WGS84
     queryset = model_class.objects.annotate(
         distance=Distance('geolocations__coordinates', point)
