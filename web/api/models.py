@@ -6,6 +6,7 @@ from django.contrib.gis.db.models.functions import Distance
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 
+
 class GeoLocatedObject(models.Model):
     class Meta:
         abstract = True
@@ -63,20 +64,28 @@ class GeoLocation(models.Model):
             'end_timestamp': obj.end_timestamp
         } for obj in queryset]
 
+
 def find_nearest(model_class, latitude, longitude, given_time):
     point = Point(longitude, latitude, srid=4326)  # WGS84
     queryset = model_class.objects.annotate(
-        distance=Distance('geolocations__coordinates', point),
-        comments=models.F('geolocations__comments'),
+        distance=Distance('geolocations__coordinates', point)
     ).filter(
         geolocations__start_timestamp__lte=given_time,
         geolocations__end_timestamp__gte=given_time
     ).order_by('distance')
-
+    
     nearest = queryset.first() if queryset.exists() else None
+    
+    if nearest:
+        related_geolocation = nearest.geolocations.get(
+            start_timestamp__lte=given_time,
+            end_timestamp__gte=given_time
+        )
+        comments = related_geolocation.comments if related_geolocation else None
+        return {
+            'instance': nearest,
+            'distance': nearest.distance.m,
+            'comments': comments
+        }
 
-    return {
-        'station': nearest,
-        'distance': nearest.distance.m,
-        'comments': nearest.comments
-    } if nearest else None
+    return None
