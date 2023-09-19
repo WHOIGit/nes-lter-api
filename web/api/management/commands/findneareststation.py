@@ -1,10 +1,10 @@
 from django.core.management.base import BaseCommand, CommandError
 
+from api.utils import parse_datetime_utc
 from api.models import Station
-from api.queries import find_nearest, parse_datetime
 
 class Command(BaseCommand):
-    help = "Set station location (name)"
+    help = "Find nearest station"
 
     def add_arguments(self, parser):
         parser.add_argument("latitude", type=float)
@@ -12,8 +12,9 @@ class Command(BaseCommand):
         parser.add_argument('time', type=str, default=None)
 
     def handle(self, *args, **options):
-        given_time = parse_datetime(options["time"])
-        if not given_time:
-            raise CommandError(f"Invalid time {options['time']}")
-        nearest = find_nearest(Station, options["latitude"], options["longitude"], given_time)
-        print(nearest)
+        given_time = parse_datetime_utc(options["time"])
+        nearest, distance = Station.nearest_station(options["latitude"], options["longitude"], given_time)
+        if nearest is None:
+            self.stderr.write(self.style.ERROR(f'No stations found'))
+            return
+        self.stdout.write(self.style.SUCCESS(f'Nearest station is {nearest.name} at {distance} meters'))

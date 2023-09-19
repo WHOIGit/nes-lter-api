@@ -11,3 +11,5 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         station = Station(name=options["name"])
         station.save()
+
+        self.stdout.write(self.style.SUCCESS(f'Successfully created station {station.name}'))
