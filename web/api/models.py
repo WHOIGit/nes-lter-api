@@ -1,119 +1,81 @@
-from django.db import models
+from django.db import models as models
 from django.contrib.gis.db import models as gis_models
 from django.contrib.gis.geos import Point
-from django.utils import timezone
-from django.contrib.gis.db.models.functions import Distance
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
+from django.utils import timezone
 
-
-class GeoLocatedObject(models.Model):
-    class Meta:
-        abstract = True
-
-    geolocations = GenericRelation('GeoLocation')
-
-    def set_coordinates(self, latitude, longitude, depth, start_time, end_time, comments=None):
-        GeoLocation.objects.create(
-            content_object=self,
-            coordinates=Point(longitude, latitude),
-            depth=depth,
-            comments=comments,
-            start_timestamp=start_time,
-            end_timestamp=end_time
-        )
-
-    def get_coordinates_at_time(self, given_time):
-        return GeoLocation.get_coordinates_at_time(self, given_time)
-    
-    def unset_coordinates(self, given_time):
-        self.geolocations.filter(
-            start_timestamp__lte=given_time,
-            end_timestamp__gte=given_time
-        ).delete()
-
-class Station(GeoLocatedObject):
-    name = models.CharField(max_length=255)
-
-    def __str__(self) -> str:
-        return self.name
-
-class GeoLocation(models.Model):
+# TimeStampedModelInstance class
+class TimeStampedModelInstance(models.Model):
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
-    coordinates = gis_models.PointField()
-    depth = models.FloatField(null=True)
-    comments = models.TextField(null=True)
-    start_timestamp = models.DateTimeField()
-    end_timestamp = models.DateTimeField()
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+# StationLocation model
+class StationLocation(TimeStampedModelInstance):
+    geolocation = gis_models.PointField()
+    depth = models.FloatField(null=True, blank=True)
+    comment = models.TextField(null=True, blank=True)
+
+# Station model
+class Station(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    locations = GenericRelation(StationLocation)
+
+    def set_location(self, latitude, longitude, start_time, end_time=None, depth=None, comment=None):
+        # Create a new Point object for the geolocation
+        geolocation = Point(longitude, latitude, srid=4326)
+        
+        # Close any currently "open" (end_time is None) locations by setting their end_time to the new start_time
+        self.locations.filter(end_time__isnull=True).update(end_time=start_time)
+        
+        # Create a new StationLocation linked to this Station
+        StationLocation.objects.create(
+            content_object=self,
+            geolocation=geolocation,
+            depth=depth,
+            start_time=start_time,
+            end_time=end_time,
+            comment=comment
+        )
+
+    def get_location(self, timestamp=None):
+        if timestamp is None:
+            timestamp = timezone.now()
+
+        locations = self.locations.filter(
+            Q(end_time__gte=timestamp) | Q(end_time__isnull=True),
+            start_time__lte=timestamp
+        ).order_by('-start_time')
+
+        if locations.exists():
+            return locations.first()
+        else:
+            return None
 
     @classmethod
-    def get_coordinates_at_time(cls, content_object, given_time):
-        queryset = cls.objects.filter(
-            content_object=content_object,
-            start_timestamp__lte=given_time,
-            end_timestamp__gte=given_time
-        )
-        return [{
-            'latitude': obj.coordinates.y,
-            'longitude': obj.coordinates.x,
-            'depth': obj.depth,
-            'comments': obj.comments,
-            'start_timestamp': obj.start_timestamp,
-            'end_timestamp': obj.end_timestamp
-        } for obj in queryset]
+    def nearest_station(cls, latitude, longitude, timestamp):
+        from django.contrib.gis.db.models.functions import Distance
 
+        # Create a Point object from the latitude and longitude
+        geolocation = Point(longitude, latitude, srid=4326)
 
-class Organization(models.Model):
-    name = models.TextField() # e.g., "Woods Hole Oceanographic Institution"
-    acronym = models.CharField(max_length=32, null=True) # e.g., "WHOI"
+        active_locations = StationLocation.objects.filter(
+            Q(end_time__gte=timestamp) | Q(end_time__isnull=True),
+            start_time__lte=timestamp
+        ).annotate(distance=Distance('geolocation', geolocation)).order_by('distance')
 
-    def __str__(self) -> str:
-        return self.acronym if self.acronym else self.name
+        if active_locations.exists():
+            nearest_location = active_locations.first()
+            return nearest_location.content_object, nearest_location.distance.m
+        else:
+            return None, None
 
-
-class Person(models.Model):
-    full_name = models.TextField() # e.g., "Jane Doe"
-    affiliation = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True)
-    orcid = models.CharField(max_length=32, null=True) # e.g., "0000-0002-XXXX-XXXX"
-    email_address = models.EmailField(null=True) # e.g., "janedoe@whoi.edu"
-    
-    def __str__(self) -> str:
-        return self.full_name
-
-
-class Vessel(models.Model):
-    designation = models.CharField(max_length=64) # abbreviation e.g., "AR" for "Armstrong"
-    name = models.TextField(null=True) # name of vessel e.g., "R/V Neil Armstrong"
-    nickname = models.CharField(max_length=64, null=True) # nickname e.g., "Armstrong"
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True)
-
-    def __str__(self) -> str:
-        return self.nickname if self.nickname else self.name
-    
-
-class Cruise(models.Model):
-    vessel = models.ForeignKey(Vessel, on_delete=models.CASCADE)
-    name = models.CharField(max_length=64) # e.g., "AR70b"
-    start_timestamp = models.DateTimeField()
-    end_timestamp = models.DateTimeField(null=True)
-    comments = models.TextField(null=True)
-
-    def __str__(self) -> str:
+    def __str__(self):
         return self.name
-    
-
-class Cast(models.Model):
-    cruise = models.ForeignKey(Cruise, on_delete=models.CASCADE, related_name="casts")
-    sort_key = models.IntegerField() # e.g., 1
-    name = models.CharField(max_length=64) # e.g., "1b"
-    location = gis_models.PointField()
-    max_depth = models.FloatField(null=True)
-    start_timestamp = models.DateTimeField()
-    end_timestamp = models.DateTimeField(null=True)
-    comments = models.TextField(null=True)
-
-    def __str__(self) -> str:
-        return f"{self.cruise.name} {self.name}"
-    
