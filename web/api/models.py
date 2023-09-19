@@ -74,18 +74,13 @@ class Organization(models.Model):
 
 
 class Person(models.Model):
-    full_name = models.TextField() # e.g., "Robert Ballard"
+    full_name = models.TextField() # e.g., "Jane Doe"
     affiliation = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True)
-
+    orcid = models.CharField(max_length=32, null=True) # e.g., "0000-0002-XXXX-XXXX"
+    email_address = models.EmailField(null=True) # e.g., "janedoe@whoi.edu"
+    
     def __str__(self) -> str:
         return self.full_name
-
-
-class Role(models.Model):
-    name = models.CharField(max_length=128) # e.g., "Chief Scientist"
-
-    def __str__(self) -> str:
-        return self.name
 
 
 class Vessel(models.Model):
