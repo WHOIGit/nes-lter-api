@@ -4,6 +4,7 @@ services:
   api:
     build: .
     container_name: neslter
+    command: python manage.py runserver ${HOST:-0.0.0.0}:8000
     environment:
       - DJANGO_HOST=${HOST:-localhost}
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-changeme}
