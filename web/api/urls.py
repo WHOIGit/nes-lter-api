@@ -6,6 +6,7 @@ from api import views
 
 router = routers.DefaultRouter()
 router.register(r'stations', views.StationViewSet)
+router.register(r'nearest-station', views.NearestStationViewSet, basename='nearest-station')
 
 
 # Wire up our API using automatic URL routing.

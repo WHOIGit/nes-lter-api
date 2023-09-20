@@ -1,4 +1,4 @@
-from rest_framework.serializers import HyperlinkedModelSerializer, RelatedField
+from rest_framework.serializers import HyperlinkedModelSerializer, RelatedField, FloatField
 
 from api.models import Station, StationLocation
 
@@ -39,3 +39,10 @@ class StationLocationSerializer(HyperlinkedModelSerializer):
         model = StationLocation
         fields = ['id', 'geolocation', 'depth', 'start_time', 'end_time', 'comment']
 
+
+class StationLocationWithDistanceSerializer(StationLocationSerializer):
+    distance = FloatField(read_only=True)
+
+    class Meta:
+        model = Station
+        fields = '__all__'

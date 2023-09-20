@@ -60,22 +60,17 @@ class Station(models.Model):
             return None
 
     @classmethod
-    def nearest_station(cls, latitude, longitude, timestamp):
+    def distances(cls, latitude, longitude, timestamp):
         from django.contrib.gis.db.models.functions import Distance
 
         # Create a Point object from the latitude and longitude
         geolocation = Point(longitude, latitude, srid=4326)
 
-        active_locations = StationLocation.objects.filter(
+        return StationLocation.objects.filter(
             Q(end_time__gte=timestamp) | Q(end_time__isnull=True),
             start_time__lte=timestamp
         ).annotate(distance=Distance('geolocation', geolocation)).order_by('distance')
 
-        if active_locations.exists():
-            nearest_location = active_locations.first()
-            return nearest_location.content_object, nearest_location.distance.m
-        else:
-            return None, None
 
     def __str__(self):
         return self.name
