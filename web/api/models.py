@@ -33,6 +33,9 @@ class Station(models.Model):
         if end_time is not None and end_time < start_time:
             raise ValueError('end_time must be greater than or equal to start_time')
         
+        if self.locations.filter(start_time=start_time).exists():
+            raise ValueError('A location already exists at the given start_time')
+
         # Create a new Point object for the geolocation
         geolocation = Point(longitude, latitude, srid=4326)
         
