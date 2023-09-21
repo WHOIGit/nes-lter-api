@@ -31,6 +31,10 @@ class StationSerializer(HyperlinkedModelSerializer):
         model = Station
         fields = ['id', 'name', 'locations']
 
+class AbbreviatedStationSerializer(HyperlinkedModelSerializer):
+    class Meta:
+        model = Station
+        fields = ['id', 'name']
 
 class StationLocationSerializer(HyperlinkedModelSerializer):
     geolocation = GeolocationField(read_only=True)
@@ -40,9 +44,23 @@ class StationLocationSerializer(HyperlinkedModelSerializer):
         fields = ['id', 'geolocation', 'depth', 'start_time', 'end_time', 'comment']
 
 
+class DistanceField(RelatedField):
+
+    def to_representation(self, value):
+        return value.m / 1000 # convert to km
+
+class StationField(RelatedField):
+
+    def to_representation(self, value):
+        serializer = AbbreviatedStationSerializer(value.first())
+
+        return serializer.data
+
+
 class StationLocationWithDistanceSerializer(StationLocationSerializer):
-    distance = FloatField(read_only=True)
+    distance = DistanceField(read_only=True)
+    station = StationField(read_only=True)
 
     class Meta:
-        model = Station
-        fields = '__all__'
+        model = StationLocation
+        fields = ['station', 'distance']

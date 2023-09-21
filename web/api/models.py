@@ -23,10 +23,11 @@ class StationLocation(TimeStampedModelInstance):
     depth = models.FloatField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
 
+
 # Station model
 class Station(models.Model):
     name = models.CharField(max_length=100, unique=True)
-    locations = GenericRelation(StationLocation)
+    locations = GenericRelation(StationLocation, related_query_name='station')
 
     def set_location(self, latitude, longitude, start_time, end_time=None, depth=None, comment=None):
         # Create a new Point object for the geolocation
