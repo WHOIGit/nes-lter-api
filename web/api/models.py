@@ -30,12 +30,22 @@ class Station(models.Model):
     locations = GenericRelation(StationLocation, related_query_name='station')
 
     def set_location(self, latitude, longitude, start_time, end_time=None, depth=None, comment=None):
+        if end_time is not None and end_time < start_time:
+            raise ValueError('end_time must be greater than or equal to start_time')
+        
         # Create a new Point object for the geolocation
         geolocation = Point(longitude, latitude, srid=4326)
         
-        # Close any currently "open" (end_time is None) locations by setting their end_time to the new start_time
-        self.locations.filter(end_time__isnull=True).update(end_time=start_time)
-        
+        # If more recent, close any currently "open" (end_time is None) locations by setting their end_time to the new start_time
+        self.locations.filter(start_time__lt=start_time).filter(end_time__isnull=True).update(end_time=start_time)
+
+        # If less recent, set the end_time to the start_time of the successor location
+        successor = self.locations.filter(start_time__gt=start_time).order_by('start_time').first()
+
+        if successor is not None:
+            if end_time is None or end_time > successor.start_time:
+                end_time = successor.start_time
+
         # Create a new StationLocation linked to this Station
         StationLocation.objects.create(
             content_object=self,
