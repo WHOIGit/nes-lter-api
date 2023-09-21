@@ -23,10 +23,11 @@ class StationLocation(TimeStampedModelInstance):
     depth = models.FloatField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
 
+
 # Station model
 class Station(models.Model):
     name = models.CharField(max_length=100, unique=True)
-    locations = GenericRelation(StationLocation)
+    locations = GenericRelation(StationLocation, related_query_name='station')
 
     def set_location(self, latitude, longitude, start_time, end_time=None, depth=None, comment=None):
         # Create a new Point object for the geolocation
@@ -60,22 +61,30 @@ class Station(models.Model):
             return None
 
     @classmethod
-    def nearest_station(cls, latitude, longitude, timestamp):
+    def distances(cls, latitude, longitude, timestamp):
         from django.contrib.gis.db.models.functions import Distance
 
         # Create a Point object from the latitude and longitude
         geolocation = Point(longitude, latitude, srid=4326)
 
-        active_locations = StationLocation.objects.filter(
+        return StationLocation.objects.filter(
             Q(end_time__gte=timestamp) | Q(end_time__isnull=True),
             start_time__lte=timestamp
         ).annotate(distance=Distance('geolocation', geolocation)).order_by('distance')
 
-        if active_locations.exists():
-            nearest_location = active_locations.first()
-            return nearest_location.content_object, nearest_location.distance.m
+
+    @classmethod
+    def nearest_location(cls, latitude, longitude, timestamp=None):
+        if timestamp is None:
+            timestamp = timezone.now()
+
+        distances = cls.distances(latitude, longitude, timestamp)
+
+        if distances.exists():
+            return distances.first()
         else:
-            return None, None
+            return None
+        
 
     def __str__(self):
         return self.name
