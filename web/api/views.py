@@ -23,7 +23,7 @@ class NearestStationViewSet(viewsets.ReadOnlyModelViewSet):
         timestamp = self.request.query_params.get('timestamp', None)
 
         if latitude is None or longitude is None:
-            return Station.objects.none()
+            return StationLocation.objects.none()
         
         if timestamp is None:
             timestamp = timezone.now()
@@ -33,4 +33,4 @@ class NearestStationViewSet(viewsets.ReadOnlyModelViewSet):
         latitude = float(latitude)
         longitude = float(longitude)
 
-        return Station.distances(latitude, longitude, timestamp)
+        return [ Station.nearest_location(latitude, longitude, timestamp) ]

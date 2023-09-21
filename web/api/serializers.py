@@ -64,4 +64,4 @@ class StationLocationWithDistanceSerializer(StationLocationSerializer):
 
     class Meta:
         model = StationLocation
-        fields = ['station', 'geolocation', 'distance']
+        fields = ['id', 'station', 'geolocation', 'distance', 'depth', 'start_time', 'end_time', 'comment']
