@@ -73,5 +73,18 @@ class Station(models.Model):
         ).annotate(distance=Distance('geolocation', geolocation)).order_by('distance')
 
 
+    @classmethod
+    def nearest_location(cls, latitude, longitude, timestamp=None):
+        if timestamp is None:
+            timestamp = timezone.now()
+
+        distances = cls.distances(latitude, longitude, timestamp)
+
+        if distances.exists():
+            return distances.first()
+        else:
+            return None
+        
+
     def __str__(self):
         return self.name
