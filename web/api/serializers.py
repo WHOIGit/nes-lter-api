@@ -60,7 +60,8 @@ class StationField(RelatedField):
 class StationLocationWithDistanceSerializer(StationLocationSerializer):
     distance = DistanceField(read_only=True)
     station = StationField(read_only=True)
+    geolocation = GeolocationField(read_only=True)
 
     class Meta:
         model = StationLocation
-        fields = ['station', 'distance']
+        fields = ['station', 'geolocation', 'distance']
