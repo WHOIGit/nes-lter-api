@@ -1,0 +1,6 @@
+DJANGO_USER=my_django_username
+DJANGO_PASSWORD=my_django_password
+
+DJANGO_BASE_URL=http://localhost:8000
+
+DJANGO_TOKEN=fill-this-in-when-obtained

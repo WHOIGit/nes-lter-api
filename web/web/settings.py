@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'api'
 ]
 
@@ -130,6 +131,13 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # configured settings for the NES-LTER API
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+}
+
 
 _HOST = os.getenv('DJANGO_HOST', 'localhost')
 _HTTPS_PORT = os.getenv('DJANGO_HTTPS_PORT', '443')

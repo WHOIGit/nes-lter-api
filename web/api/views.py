@@ -1,5 +1,15 @@
 from datetime import timezone
+from io import StringIO
+
+import pandas as pd
+
+from django.http import HttpResponse
+
 from rest_framework import viewsets, permissions
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.authentication import TokenAuthentication
 
 from api.models import Station, StationLocation
 from api.serializers import StationSerializer, StationLocationWithDistanceSerializer
@@ -34,3 +44,40 @@ class NearestStationViewSet(viewsets.ReadOnlyModelViewSet):
         longitude = float(longitude)
 
         return [ Station.nearest_location(latitude, longitude, timestamp) ]
+
+
+def csv_response(df, filename):
+    output = StringIO()
+    df.to_csv(output, index=False)
+    csv_content = output.getvalue()
+
+    # Send it as a response
+    response = HttpResponse(csv_content, content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename={filename}'
+    
+    return response
+
+
+class NearestStationCsv(APIView):
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        csv_file = request.FILES.get('csv_file', None)
+        
+        if not csv_file:
+            return Response({"error": "No file called 'csv_file'"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Read input CSV using pandas
+        input_df = pd.read_csv(csv_file)
+        
+        # Do something with input_df
+        
+        # Create output CSV using pandas
+        output_df = pd.DataFrame({
+            'header1': ['data1'],
+            'header2': ['data2']
+        })
+
+        return csv_response(output_df, 'output.csv')
