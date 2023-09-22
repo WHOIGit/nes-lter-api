@@ -15,6 +15,8 @@ from api.models import Station, StationLocation
 from api.serializers import StationSerializer, StationLocationWithDistanceSerializer
 from api.utils import parse_datetime_utc
 
+from api.workflows import add_nearest_station
+
 
 class StationViewSet(viewsets.ModelViewSet):
     queryset = Station.objects.all()
@@ -72,12 +74,7 @@ class NearestStationCsv(APIView):
         # Read input CSV using pandas
         input_df = pd.read_csv(csv_file)
         
-        # Do something with input_df
-        
-        # Create output CSV using pandas
-        output_df = pd.DataFrame({
-            'header1': ['data1'],
-            'header2': ['data2']
-        })
+        # add nearest station information
+        output_df = add_nearest_station(input_df)
 
         return csv_response(output_df, 'output.csv')
