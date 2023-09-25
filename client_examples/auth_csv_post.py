@@ -3,7 +3,6 @@ import os
 import requests
 import dotenv
 
-dotenv.load_dotenv()
 
 def main():
     csv_file = 'client_examples/foo.csv'
@@ -17,5 +16,7 @@ def main():
 
     print(response.text)
 
+
 if __name__ == '__main__':
+    dotenv.load_dotenv()
     main()
