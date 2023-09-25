@@ -23,6 +23,9 @@ class StationLocation(TimeStampedModelInstance):
     depth = models.FloatField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
 
+    def get_station(self):
+        return self.content_object
+
 
 # Station model
 class Station(models.Model):
