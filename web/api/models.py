@@ -30,6 +30,7 @@ class StationLocation(TimeStampedModelInstance):
 # Station model
 class Station(models.Model):
     name = models.CharField(max_length=100, unique=True)
+    full_name = models.CharField(max_length=200, null=True, blank=True)
     locations = GenericRelation(StationLocation, related_query_name='station')
 
     def set_location(self, latitude, longitude, start_time, end_time=None, depth=None, comment=None):
