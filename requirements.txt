@@ -3,3 +3,5 @@ psycopg2
 python-dateutil
 djangorestframework
 pandas
+openpyxl
+xlrd
