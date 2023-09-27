@@ -66,6 +66,10 @@ class NearestStationCsv(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        timestamp_column = request.GET.get('timestamp_column', None)
+        latitude_column = request.GET.get('latitude_column', None)
+        longitude_column = request.GET.get('longitude_column', None)
+
         csv_file = request.FILES.get('csv_file', None)
         
         if not csv_file:
@@ -75,6 +79,9 @@ class NearestStationCsv(APIView):
         input_df = pd.read_csv(csv_file)
         
         # add nearest station information
-        output_df = add_nearest_station(input_df)
+        output_df = add_nearest_station(input_df,
+                                        timestamp_column=timestamp_column,
+                                        latitude_column=latitude_column,
+                                        longitude_column=longitude_column)
 
-        return csv_response(output_df, 'output.csv')
+        return csv_response(output_df, 'nearest_station.csv')
