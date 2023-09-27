@@ -25,7 +25,9 @@ class StationLocation(TimeStampedModelInstance):
 
     def get_station(self):
         return self.content_object
-
+    
+    def __str__(self):
+        return '{}: {} {}'.format(self.content_object, self.geolocation.y, self.geolocation.x)
 
 # Station model
 class Station(models.Model):
