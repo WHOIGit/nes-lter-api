@@ -4,3 +4,4 @@ python-dateutil
 djangorestframework
 pandas
 openpyxl
+xlrd
