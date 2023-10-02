@@ -76,12 +76,18 @@ class NearestStationCsv(APIView):
             return Response({"error": "No file called 'csv_file'"}, status=status.HTTP_400_BAD_REQUEST)
         
         # Read input CSV using pandas
-        input_df = pd.read_csv(csv_file)
+        try:
+            input_df = pd.read_csv(csv_file)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         # add nearest station information
-        output_df = add_nearest_station(input_df,
-                                        timestamp_column=timestamp_column,
-                                        latitude_column=latitude_column,
-                                        longitude_column=longitude_column)
+        try:
+            output_df = add_nearest_station(input_df,
+                                            timestamp_column=timestamp_column,
+                                            latitude_column=latitude_column,
+                                            longitude_column=longitude_column)
 
-        return csv_response(output_df, 'nearest_station.csv')
+            return csv_response(output_df, 'nearest_station.csv')
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
