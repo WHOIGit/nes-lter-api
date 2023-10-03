@@ -16,6 +16,9 @@ def add_nearest_station(input_df, timestamp_column=None, latitude_column=None, l
     if not {'latitude', 'longitude', 'timestamp'}.issubset(df.columns):
         raise ValueError('Missing one or more required columns: latitude, longitude, timestamp')
     
+    if {'nearest_station', 'distance_km'}.issubset(df.columns):
+        raise ValueError('Cannot overwrite existing columns: nearest_station, distance_km')
+
     for index, row in df.iterrows():
         # get the nearest station
         nearest_location = Station.nearest_location(row['latitude'], row['longitude'], row['timestamp'])
