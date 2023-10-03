@@ -17,4 +17,5 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
     path('nearest-station-csv/', views.NearestStationCsv.as_view(), name='nearest-station-csv'),
+    path('parse-ctd-hdr/', views.ParseHdrFile.as_view(), name='parse-ctd-hdr'),
 ]
