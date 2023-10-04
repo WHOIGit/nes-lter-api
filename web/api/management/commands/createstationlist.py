@@ -59,6 +59,15 @@ class Command(BaseCommand):
                     latitude = float(row.decimalLatitude)
                     longitude = float(row.decimalLongitude)
                     depth = float(row.depth_m) if not np.isnan(row.depth_m) else None
+
+                    # check if lat/lon are valid
+                    if latitude < -90 or latitude > 90 or longitude < -180 or longitude > 180:
+                        raise ValueError(f"Invalid latitude/longitude for station {station_name}: {latitude}, {longitude}")
+                    
+                    # check if depth is positive
+                    if depth is not None and depth < 0:
+                        raise ValueError(f"Negative depth for station {station_name}: {depth}")
+                    
                     comment = row.comment if row.comment else None
 
                     start_date = parse_datetime_utc(row.startDate)
