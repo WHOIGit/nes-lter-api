@@ -4,6 +4,7 @@ from io import StringIO
 import pandas as pd
 
 from django.http import HttpResponse
+from django.core.exceptions import ValidationError
 
 from rest_framework import viewsets, permissions
 from rest_framework import status
@@ -90,4 +91,6 @@ class NearestStationCsv(APIView):
 
             return csv_response(output_df, 'nearest_station.csv')
         except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except ValidationError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
