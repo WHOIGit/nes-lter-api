@@ -1,4 +1,5 @@
 # workflows for processing, modifying, and producing data
+import pandas as pd
 
 from api.utils import regularize_column_names
 from api.models import Station
@@ -26,6 +27,9 @@ def add_nearest_station(input_df, timestamp_column=None, latitude_column=None, l
             raise ValueError(f'Invalid latitude value: {row["latitude"]}')
         if row['longitude'] < -180 or row['longitude'] > 180:
             raise ValueError(f'Invalid longitude value: {row["longitude"]}')
+        # check for invalid timestamp
+        if pd.isnull(row['timestamp']):
+            raise ValueError('Invalid timestamp value: null')
         # get the nearest station
         nearest_location = Station.nearest_location(row['latitude'], row['longitude'], row['timestamp'])
         # add the station's id to the row
