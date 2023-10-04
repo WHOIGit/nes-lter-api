@@ -43,7 +43,6 @@ def station_list(timestamp=None):
     # get the current location of each Station
     stations = Station.objects.all()
     station_locations = [station.get_location(timestamp) for station in stations]
-    station_locations = [location for location in station_locations if location is not None]
     # format as a DataFrame with station name, lat, lon, depth, and comment
     df = pd.DataFrame.from_records([{
         'station': station.name,
@@ -51,7 +50,9 @@ def station_list(timestamp=None):
         'longitude': location.geolocation.x,
         'depth_m': location.depth,
         'comment': location.comment
-    } for station, location in zip(stations, station_locations)])
+    } for station, location in zip(stations, station_locations) if location is not None])
+    if df.empty:
+        return df
     # sort by station name
     df.sort_values('station', inplace=True)
     # reset the index
