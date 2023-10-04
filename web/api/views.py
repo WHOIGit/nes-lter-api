@@ -66,15 +66,28 @@ class NearestStationCsv(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        timestamp_column = request.GET.get('timestamp_column', None)
+        latitude_column = request.GET.get('latitude_column', None)
+        longitude_column = request.GET.get('longitude_column', None)
+
         csv_file = request.FILES.get('csv_file', None)
         
         if not csv_file:
             return Response({"error": "No file called 'csv_file'"}, status=status.HTTP_400_BAD_REQUEST)
         
         # Read input CSV using pandas
-        input_df = pd.read_csv(csv_file)
+        try:
+            input_df = pd.read_csv(csv_file)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         # add nearest station information
-        output_df = add_nearest_station(input_df)
+        try:
+            output_df = add_nearest_station(input_df,
+                                            timestamp_column=timestamp_column,
+                                            latitude_column=latitude_column,
+                                            longitude_column=longitude_column)
 
-        return csv_response(output_df, 'output.csv')
+            return csv_response(output_df, 'nearest_station.csv')
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
