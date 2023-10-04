@@ -17,4 +17,5 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
     path('nearest-station-csv/', views.NearestStationCsv.as_view(), name='nearest-station-csv'),
+    path('station-list', views.StationList.as_view(), name='station-list'),
 ]

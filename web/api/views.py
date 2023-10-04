@@ -15,7 +15,7 @@ from api.models import Station, StationLocation
 from api.serializers import StationSerializer, StationLocationWithDistanceSerializer
 from api.utils import parse_datetime_utc
 
-from api.workflows import add_nearest_station
+from api.workflows import add_nearest_station, station_list
 
 
 class StationViewSet(viewsets.ModelViewSet):
@@ -89,5 +89,17 @@ class NearestStationCsv(APIView):
                                             longitude_column=longitude_column)
 
             return csv_response(output_df, 'nearest_station.csv')
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class StationList(APIView):
+    
+    def get(self, request):
+        timestamp = request.GET.get('timestamp', None)
+
+        try:
+            df = station_list(timestamp=timestamp)
+            return csv_response(df, 'station_list.csv')
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

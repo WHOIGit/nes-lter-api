@@ -1,4 +1,5 @@
 # workflows for processing, modifying, and producing data
+import pandas as pd 
 
 from api.utils import regularize_column_names
 from api.models import Station
@@ -35,4 +36,25 @@ def add_nearest_station(input_df, timestamp_column=None, latitude_column=None, l
     # use original column names for existing columns
     df.columns = list(input_df.columns) + ['nearest_station', 'distance_km']
 
+    return df
+
+
+def station_list(timestamp=None):
+    # get the current location of each Station
+    stations = Station.objects.all()
+    station_locations = [station.get_location(timestamp) for station in stations]
+    station_locations = [location for location in station_locations if location is not None]
+    # format as a DataFrame with station name, lat, lon, depth, and comment
+    df = pd.DataFrame.from_records([{
+        'station': station.name,
+        'latitude': location.geolocation.y,
+        'longitude': location.geolocation.x,
+        'depth_m': location.depth,
+        'comment': location.comment
+    } for station, location in zip(stations, station_locations)])
+    # sort by station name
+    df.sort_values('station', inplace=True)
+    # reset the index
+    df.reset_index(drop=True, inplace=True)
+    # return the DataFrame
     return df
