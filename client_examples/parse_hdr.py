@@ -5,7 +5,7 @@ import dotenv
 
 
 def main():
-    hdr_file = 'client_examples/EN617_Cast01_L1.hdr'
+    hdr_file = 'client_examples/EN627_026_u.hdr'
 
     token = os.getenv('DJANGO_TOKEN', '')
     headers = { 'Authorization': f'Token {token}' }
