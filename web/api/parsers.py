@@ -19,7 +19,11 @@ def parse_hdr_file(hdr_data):
     # Regular expressions for matching latitude, longitude, and time lines
     lat_pattern = r'\* NMEA Latitude = (\d{2}) (\d{2}\.\d{2}) (\w)'
     lon_pattern = r'\* NMEA Longitude = (\d{3}) (\d{2}\.\d{2}) (\w)'
-    time_pattern = r'\* (?:NMEA UTC \(Time\)|System UTC) = (.+)$'
+    nmea_time_pattern = r'\* NMEA UTC \(Time\) = (.+)$'
+    system_time_pattern = r'\* System UTC = (.+)$'
+
+    nmea_time_iso8601 = None
+    system_time_iso8601 = None
     
     for line in lines:
         # Match and extract latitude
@@ -35,11 +39,27 @@ def parse_hdr_file(hdr_data):
             longitude_decimal = dms_to_decimal(lon_deg, lon_min, lon_dir)
         
         # Match and extract time
-        time_match = re.search(time_pattern, line)
+        # if there is a NMEA time
+        time_match = re.search(nmea_time_pattern, line)
         if time_match:
             time_str = time_match.group(1)
             time_datetime = datetime.strptime(time_str, '%b %d %Y %H:%M:%S')
-            time_iso8601 = time_datetime.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'  # Appending 'Z' to indicate UTC time
+            nmea_time_iso8601 = time_datetime.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+
+        # if there is a system time
+        time_match = re.search(system_time_pattern, line)
+        if time_match:
+            time_str = time_match.group(1)
+            time_datetime = datetime.strptime(time_str, '%b %d %Y %H:%M:%S')
+            system_time_iso8601 = time_datetime.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+
+    # prefer NMEA time over system time
+    if nmea_time_iso8601:
+        time_iso8601 = nmea_time_iso8601
+    elif system_time_iso8601:
+        time_iso8601 = system_time_iso8601
+    else:
+        raise ValueError("No time found in HDR file")
     
     return latitude_decimal, longitude_decimal, time_iso8601
 
