@@ -92,7 +92,9 @@ class NearestStationCsv(APIView):
             return csv_response(output_df, 'nearest_station.csv')
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+          
 
 class StationList(APIView):
     
