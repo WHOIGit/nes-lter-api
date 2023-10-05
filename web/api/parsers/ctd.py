@@ -12,7 +12,7 @@ def dms_to_decimal(degrees, minutes, direction):
     return decimal
 
 
-def parse_hdr_file(hdr_data):
+def parse_hdr(hdr_data):
     # extract lines from hdr_data
     lines = hdr_data.splitlines()
     
@@ -70,20 +70,23 @@ def compile_hdr_files(dir_path):
     for file in os.listdir(dir_path):
         if file.endswith(".hdr"):
             hdr_files.append(os.path.join(dir_path, file))
+
     # now parse each one and consolidate the output into a Pandas dataframe
     df = pd.DataFrame(columns=['latitude', 'longitude', 'time'])
+    rows = []
+
     for file in hdr_files:
         with open(file, 'r', encoding='ISO-8859-1') as f:
             hdr_data = f.read()
         try:
-            latitude, longitude, time = parse_hdr_file(hdr_data)
+            latitude, longitude, time = parse_hdr(hdr_data)
             row = {
                 'filename': os.path.basename(file),
                 'latitude': latitude,
                 'longitude': longitude,
                 'time': pd.to_datetime(time)
             }
-            df = df.append(row, ignore_index=True)
+            rows.append(row)
         except Exception as e:
             print(f"Error parsing file {file}: {e}")
             row = {
@@ -92,5 +95,6 @@ def compile_hdr_files(dir_path):
                 'longitude': None,
                 'time': None
             }
-            df = df.append(row, ignore_index=True)
-    return df
+            rows.append(row)
+    
+    return pd.DataFrame.from_records(rows)
