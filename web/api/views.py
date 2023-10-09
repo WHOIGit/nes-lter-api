@@ -26,7 +26,7 @@ class StationViewSet(viewsets.ModelViewSet):
 
 
 class NearestStationViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = StationLocation.objects.all()
+
     serializer_class = StationLocationWithDistanceSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
@@ -61,7 +61,7 @@ def csv_response(df, filename):
     return response
 
 
-class NearestStationCsv(APIView):
+class AddNearestStations(APIView):
 
     authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
