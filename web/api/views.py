@@ -15,6 +15,7 @@ from rest_framework.authentication import TokenAuthentication
 from api.models import Station, StationLocation
 from api.serializers import StationSerializer, StationLocationWithDistanceSerializer
 from api.utils import parse_datetime_utc
+from api.parsers.ctd.hdr import HdrFile
 
 from api.workflows import add_nearest_station, station_list
 
@@ -94,8 +95,8 @@ class AddNearestStations(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except ValidationError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-          
 
+          
 class StationList(APIView):
     
     def get(self, request):
@@ -108,3 +109,29 @@ class StationList(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except ValidationError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+          
+# view to parse a POSTed hdr file and return lat, lon, time
+
+class ParseHdrFile(APIView):
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+
+        hdr_file = request.FILES.get('hdr_file', None)
+
+        if hdr_file is None:
+            return Response({"error": "No HDR data provided"}, status=status.HTTP_400_BAD_REQUEST)
+    
+        # Read input HDR file using parse_hdr_file
+        try:
+            hdr = HdrFile(buffer=hdr_file, parse=True)
+            latitude, longitude, time = hdr.lat, hdr.lon, hdr.time
+
+            return Response({"latitude": latitude, "longitude": longitude, "time": time})
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
