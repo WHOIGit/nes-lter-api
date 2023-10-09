@@ -9,7 +9,7 @@ def main():
 
     token = os.getenv('DJANGO_TOKEN', '')
     headers = { 'Authorization': f'Token {token}' }
-    url = os.getenv('DJANGO_BASE_URL') + '/nearest-station-csv/'
+    url = os.getenv('DJANGO_BASE_URL') + '/add-nearest-stations/?timestamp_column=sample_time'
     files = {'csv_file': open(csv_file, 'rb')}
 
     response = requests.post(url, files=files, headers=headers)
