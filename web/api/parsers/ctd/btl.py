@@ -136,15 +136,25 @@ class BtlFile(CtdTextParser):
             df[c] = df[c].astype(float)
 
         # add cruise / cast
-        df[CRUISE_COL] = self.cruise
-        df[CAST_COL] = self.cast
+        # df[CRUISE_COL] = self.cruise
+        # df[CAST_COL] = self.cast
 
         # move those columns to the front
-        cols = df.columns.tolist()
-        cols = cols[-2:] + cols[:-2]
-        df = df[cols]
+        # cols = df.columns.tolist()
+        # cols = cols[-2:] + cols[:-2]
+        # df = df[cols]
 
-        # all done
+        # add depth column if necessary
+        if DEPTH_COL not in df.columns and PRESSURE_COL in df.columns:
+            df[DEPTH_COL] = self.depths().values
+        # add lat/lon if necessary
+        if LAT_COL not in df.columns and LON_COL not in df.columns:
+            df[LAT_COL] = self.lats().values
+            df[LON_COL] = self.lons().values
+        df = clean_column_names(df, {
+            'Bottle': 'niskin'
+            })
+        df = df.astype({ 'niskin': int })
 
         self._df = df
 
@@ -184,21 +194,21 @@ class BtlFile(CtdTextParser):
         else:
             raise KeyError('no source of depth information found')
 
+
 def find_btl_files(dir):
     for path in glob(os.path.join(dir, '*.btl')):
         yield path
 
 
-def parse_btl(in_path, add_depth=True, add_lat_lon=True):
-    btl = BtlFile(in_path)
-    df = btl.to_dataframe()
+def parse_btl(btl_file, add_depth=True, add_lat_lon=True):
+    df = btl_file.to_dataframe()
     # add depth column if necessary
     if add_depth and DEPTH_COL not in df.columns and PRESSURE_COL in df.columns:
-        df[DEPTH_COL] = btl.depths().values
+        df[DEPTH_COL] = btl_file.depths().values
     # add lat/lon if necessary
     if add_lat_lon and LAT_COL not in df.columns and LON_COL not in df.columns:
-        df[LAT_COL] = btl.lats().values
-        df[LON_COL] = btl.lons().values
+        df[LAT_COL] = btl_file.lats().values
+        df[LON_COL] = btl_file.lons().values
     df = clean_column_names(df, {
         'Bottle': 'niskin'
         })
