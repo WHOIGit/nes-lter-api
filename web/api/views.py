@@ -14,7 +14,7 @@ from rest_framework.authentication import TokenAuthentication
 from api.models import Station, StationLocation
 from api.serializers import StationSerializer, StationLocationWithDistanceSerializer
 from api.utils import parse_datetime_utc
-from api.parsers.ctd import parse_hdr
+from api.parsers.ctd.hdr import HdrFile
 
 from api.workflows import add_nearest_station
 
@@ -97,8 +97,8 @@ class ParseHdrFile(APIView):
     
         # Read input HDR file using parse_hdr_file
         try:
-            hdr_data = hdr_file.read().decode('ISO-8859-1')
-            latitude, longitude, time = parse_hdr(hdr_data)
+            hdr = HdrFile(buffer=hdr_file, parse=True)
+            latitude, longitude, time = hdr.lat, hdr.lon, hdr.time
 
             return Response({"latitude": latitude, "longitude": longitude, "time": time})
         
