@@ -19,5 +19,6 @@ urlpatterns = [
     path('add-nearest-stations/', views.AddNearestStations.as_view(), name='add-nearest-stations'),
     path('parse-ctd-hdr/', views.ParseHdrFile.as_view(), name='parse-ctd-hdr'),
     path('parse-ctd-btl/', views.ParseBtlFile.as_view(), name='parse-ctd-btl'),
+    path('parse-ctd-asc/', views.ParseAscFile.as_view(), name='parse-ctd-asc'),
     path('station-list', views.StationList.as_view(), name='station-list'),
 ]

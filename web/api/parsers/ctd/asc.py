@@ -29,22 +29,22 @@ def parse_asc_fwf(asc_path):
     df = pd.read_fwf(asc_path, widths=col_widths, encoding='latin-1')
     return df
 
-def parse_asc(asc_path, delimiter=','):
+def parse_asc(asc_path, delimiter=',', infer_delimiter=True):
     # duck type to see if this is CSV or fixed-width
     df = parse_asc_csv(asc_path, delimiter)
-    if len(df.columns) == 1: # whoops, try a different delimiter
+    if infer_delimiter and len(df.columns) == 1: # whoops, try a different delimiter
         if delimiter == ',':
             delimiter = ';'
         elif delimiter == ';':
             delimiter = ','
+        asc_path.seek(0)
         df = parse_asc_csv(asc_path, delimiter)
     if len(df.columns) == 1: # try fixed-width
+        asc_path.seek(0)
         df = parse_asc_fwf(asc_path)
     df = clean_column_names(df)
     return df
 
-def format_asc(df):
-    return df.copy()
 
 def parse_cast(asc_dir, cruise, cast=1, delimiter=';'):
     for p in sorted(glob(os.path.join(asc_dir, '*.asc'))):
