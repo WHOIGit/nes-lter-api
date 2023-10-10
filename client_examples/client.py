@@ -2,14 +2,15 @@ import os
 from io import StringIO
 from getpass import getpass
 
+import dotenv
 import requests
 import pandas as pd
 
 
 def add_auth_headers(headers={}):
-    token = os.getenv('DJANGO_TOKEN')
+    token = os.getenv('NESLTER_API_TOKEN')
     if token is None:
-        raise ValueError('DJANGO_TOKEN environment variable not set')
+        raise ValueError('NESLTER_API_TOKEN environment variable not set')
     headers['Authorization'] = f'Token {token}'
     return headers
 
@@ -27,9 +28,9 @@ def parse_csv_response(response):
 
 
 def construct_api_url(suffix):
-    base_url = os.getenv('DJANGO_BASE_URL')
+    base_url = os.getenv('NESLTER_API_BASE_URL')
     if base_url is None:
-        raise ValueError('DJANGO_BASE_URL environment variable not set')
+        raise ValueError('NESLTER_API_BASE_URL environment variable not set')
     url = base_url + suffix
     return url
 
@@ -51,14 +52,19 @@ def obtain_auth_token():
     if response.status_code != 200:
         raise ValueError('Invalid username or password')
     token = response.json().get('token')
-    print('Add this to your .env file')
-    print(f'DJANGO_TOKEN={token}')
+    os.environ['NESLTER_API_TOKEN'] = token
+    print('Add this to your .env file. Do not commit it to git.')
+    print(f'NESLTER_API_TOKEN={token}')
 
 
 class Client(object):
 
-    def __init__(self):
-        pass
+    def __init__(self, loadenv=True):
+        if loadenv:
+            dotenv.load_dotenv()
+
+    def obtain_auth_token(self):
+        obtain_auth_token()
     
     def parse_hdr(self, hdr_file):
         return parse_ctd(hdr_file, 'hdr')
@@ -69,10 +75,10 @@ class Client(object):
     def parse_asc(self, asc_file):
         return parse_ctd(asc_file, 'asc')
     
-    def station_list(self, timestamp):
+    def station_list(self, timestamp=None):
         suffix = '/station-list'
         url = construct_api_url(suffix)
-        params = {'timestamp': timestamp}
+        params = {'timestamp': timestamp} if timestamp else {}
         response = requests.get(url, params=params)
         return parse_csv_response(response)
 

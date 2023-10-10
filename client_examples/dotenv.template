@@ -1,6 +1,3 @@
-DJANGO_USER=my_django_username
-DJANGO_PASSWORD=my_django_password
+NESLTER_API_BASE_URL=http://localhost:8000
 
-DJANGO_BASE_URL=http://localhost:8000
-
-DJANGO_TOKEN=fill-this-in-when-obtained
+NESLTER_API_TOKEN=fill-this-in-when-obtained

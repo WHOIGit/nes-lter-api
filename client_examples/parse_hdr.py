@@ -7,9 +7,9 @@ import dotenv
 def main():
     hdr_file = 'client_examples/EN627_026_u.hdr'
 
-    token = os.getenv('DJANGO_TOKEN', '')
+    token = os.getenv('NESLTER_API_TOKEN', '')
     headers = { 'Authorization': f'Token {token}' }
-    url = os.getenv('DJANGO_BASE_URL') + '/parse-ctd-hdr/'
+    url = os.getenv('NESLTER_API_BASE_URL') + '/parse-ctd-hdr/'
     files = {'hdr_file': open(hdr_file, 'rb')}
 
     response = requests.post(url, files=files, headers=headers)

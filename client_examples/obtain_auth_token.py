@@ -11,7 +11,7 @@ def obtain_auth_token(url, username, password):
 
 
 def main():
-    url = os.getenv('DJANGO_BASE_URL', 'http://localhost:8000') + '/api-token-auth/'
+    url = os.getenv('NESLTER_API_BASE_URL', 'http://localhost:8000') + '/api-token-auth/'
     username = os.getenv('DJANGO_USER', 'my_django_username')
     password = os.getenv('DJANGO_PASSWORD', 'my_django_password')
 
