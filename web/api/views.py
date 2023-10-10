@@ -1,9 +1,9 @@
 from datetime import timezone
-from io import StringIO
+from io import StringIO, BytesIO
 
 import pandas as pd
 
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.core.exceptions import ValidationError
 
 from rest_framework import viewsets, permissions
@@ -16,7 +16,8 @@ from api.models import Station, StationLocation
 from api.serializers import StationSerializer, StationLocationWithDistanceSerializer
 from api.utils import parse_datetime_utc
 from api.parsers.ctd.hdr import HdrFile
-from api.parsers.ctd.btl import BtlFile, parse_btl
+from api.parsers.ctd.btl import BtlFile
+from api.parsers.ctd.asc import parse_asc
 
 from api.workflows import add_nearest_station, station_list
 
@@ -155,6 +156,28 @@ class ParseBtlFile(APIView):
             df = btl.to_dataframe()
 
             return csv_response(df, 'btl.csv')
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class ParseAscFile(APIView):
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+
+        asc_file = request.FILES.get('asc_file', None)
+
+        if asc_file is None:
+            return Response({"error": "No ASC data provided"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Read input ASC file using pandas
+        try:
+            buffer = BytesIO(asc_file.read())
+            df = parse_asc(buffer, infer_delimiter=True)
+            return csv_response(df, 'asc.csv')
         
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
