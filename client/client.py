@@ -83,6 +83,7 @@ class Client(object):
         return parse_csv_response(response)
 
     def add_nearest_stations(self, csv_file, timestamp_column=None, latitude_column=None, longitude_column=None):
+        # TODO accept dataframe as input in addition to CSV file
         suffix = '/add-nearest-stations/'
         url = construct_api_url(suffix)
         params = {}
