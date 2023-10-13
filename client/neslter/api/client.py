@@ -1,61 +1,7 @@
-import os
-from io import StringIO
-from getpass import getpass
-
 import dotenv
 import requests
-import pandas as pd
 
-
-def add_auth_headers(headers={}):
-    token = os.getenv('NESLTER_API_TOKEN')
-    if token is None:
-        raise ValueError('NESLTER_API_TOKEN environment variable not set')
-    headers['Authorization'] = f'Token {token}'
-    return headers
-
-
-def post_csv(url, csv_file, csv_filename=None, headers={}, params={}):
-    headers = add_auth_headers(headers)
-    files = {csv_filename: open(csv_file, 'rb')}
-    response = requests.post(url, files=files, headers=headers, params=params)
-    return response
-
-
-def parse_csv_response(response):
-    df = pd.read_csv(StringIO(response.text))
-    return df
-
-
-def construct_api_url(suffix):
-    base_url = os.getenv('NESLTER_API_BASE_URL')
-    if base_url is None:
-        raise ValueError('NESLTER_API_BASE_URL environment variable not set')
-    url = base_url + suffix
-    return url
-
-
-def parse_ctd(ctd_file, file_type):
-    suffix = f'/parse-ctd-{file_type}/'
-    url = construct_api_url(suffix)
-    response = post_csv(url, ctd_file, csv_filename=f'{file_type}_file')
-    return parse_csv_response(response)
-
-
-def obtain_auth_token():
-    url = construct_api_url('/api-token-auth/')
-    # read username and password from user
-    username = input('Username: ')
-    password = getpass('Password: ')
-    data = {'username': username, 'password': password}
-    response = requests.post(url, data=data)
-    if response.status_code != 200:
-        raise ValueError('Invalid username or password')
-    token = response.json().get('token')
-    os.environ['NESLTER_API_TOKEN'] = token
-    print('Add this to your .env file. Do not commit it to git.')
-    print(f'NESLTER_API_TOKEN={token}')
-
+from .utils import add_auth_headers, construct_api_url, parse_csv_response, post_csv, parse_ctd, obtain_auth_token
 
 class Client(object):
 
@@ -75,12 +21,51 @@ class Client(object):
     def parse_asc(self, asc_file):
         return parse_ctd(asc_file, 'asc')
     
+    def create_station(self, station_name, full_name):
+        suffix = '/stations/'
+        url = construct_api_url(suffix)
+        data = {'name': station_name, 'full_name': full_name}
+        response = requests.post(url, data=data, headers=add_auth_headers())
+        return response
+
+    def delete_station(self, station_name):
+        suffix = f'/stations/{station_name}'
+        url = construct_api_url(suffix)
+        response = requests.delete(url, headers=add_auth_headers())
+        return response
+
+    def add_station_location(self, station_name, latitude, longitude,
+                             start_time, end_time=None, depth=None):
+        suffix = '/add-station-location/'
+        url = construct_api_url(suffix)
+        data = {'name': station_name, 'latitude': latitude,
+                'longitude': longitude, 'depth': depth,
+                'start_time': start_time, 'end_time': end_time}
+        response = requests.post(url, data=data, headers=add_auth_headers())
+        return response
+
     def station_list(self, timestamp=None):
         suffix = '/station-list'
         url = construct_api_url(suffix)
         params = {'timestamp': timestamp} if timestamp else {}
         response = requests.get(url, params=params)
         return parse_csv_response(response)
+
+    def nearest_station(self, latitude, longitude, timestamp=None):
+        suffix = '/nearest-station'
+        url = construct_api_url(suffix)
+        params = {'latitude': latitude, 'longitude': longitude}
+        if timestamp is not None:
+            params['timestamp'] = timestamp
+        response = requests.get(url, params=params).json()[0]
+        return {
+            'name': response['station']['name'],
+            'distance_km': response['distance'],
+            'latitude': response['geolocation']['latitude'],
+            'longitude': response['geolocation']['longitude'],
+            'depth': response['depth'],
+            'comment': response['comment'],
+        }
 
     def add_nearest_stations(self, csv_file, timestamp_column=None, latitude_column=None, longitude_column=None):
         # TODO accept dataframe as input in addition to CSV file
