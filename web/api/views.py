@@ -2,7 +2,7 @@ from io import StringIO, BytesIO
 
 import pandas as pd
 
-from django.http import HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 
@@ -54,7 +54,7 @@ class StationViewSet(viewsets.ModelViewSet):
         filter_kwargs = {self.lookup_field: self.kwargs[self.lookup_field]}
         obj = queryset.filter(**filter_kwargs).first()
         if obj is None:
-            self.raise_not_found()
+            raise Http404(f"No station found with name '{filter_kwargs[self.lookup_field]}'")
         self.check_object_permissions(self.request, obj)
         return obj
     
