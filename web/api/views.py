@@ -1,9 +1,9 @@
-from datetime import timezone
 from io import StringIO, BytesIO
 
 import pandas as pd
 
-from django.http import HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
+from django.utils import timezone
 from django.core.exceptions import ValidationError
 
 from rest_framework import viewsets, permissions
@@ -23,9 +23,92 @@ from api.workflows import add_nearest_station, station_list
 
 
 class StationViewSet(viewsets.ModelViewSet):
+
     queryset = Station.objects.all()
     serializer_class = StationSerializer
+
+    authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    lookup_field = 'name'
+    
+    def create(self, request, *args, **kwargs):
+        station_name = request.data.get('name')
+        if not station_name:
+            return Response({"error": "name is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        station, created = Station.objects.get_or_create(name=station_name, defaults={
+            'name': station_name,
+            'full_name': request.data.get('full_name')
+        })
+
+        if created:
+            message = f"Station '{station_name}' created successfully."
+        else:
+            message = f"Station '{station_name}' already exists."
+
+        return Response({"message": message}, status=status.HTTP_201_CREATED)
+
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        filter_kwargs = {self.lookup_field: self.kwargs[self.lookup_field]}
+        obj = queryset.filter(**filter_kwargs).first()
+        if obj is None:
+            raise Http404(f"No station found with name '{filter_kwargs[self.lookup_field]}'")
+        self.check_object_permissions(self.request, obj)
+        return obj
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({"message": f"Station '{instance.name}' deleted successfully."}, status=status.HTTP_200_OK)
+
+
+class AddStationLocation(APIView):
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+
+        station_name = request.data.get('name', None)
+
+        if station_name is None:
+            return Response({"error": "name is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        station = Station.objects.filter(name=station_name).first()
+
+        if station is None:
+            return Response({"error": f"Station '{station_name}' not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        latitude = request.data.get('latitude', None)
+        longitude = request.data.get('longitude', None)
+        depth = request.data.get('depth', None)
+        start_time = request.data.get('start_time', None)
+        end_time = request.data.get('end_time', None)
+        comment = request.data.get('comment', None)
+
+        if latitude is None or longitude is None or start_time is None:
+            return Response({"error": "latitude, longitude, and start_time are required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            latitude = float(latitude)
+            longitude = float(longitude)
+            start_time = parse_datetime_utc(start_time)
+            if end_time is not None:
+                end_time = parse_datetime_utc(end_time)
+            if depth is not None:
+                depth = float(depth)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            station.set_location(latitude=latitude, longitude=longitude, start_time=start_time,
+                                    end_time=end_time, depth=depth, comment=comment)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({"message": f"Location for station '{station_name}' added successfully."}, status=status.HTTP_201_CREATED)
 
 
 class NearestStationViewSet(viewsets.ReadOnlyModelViewSet):

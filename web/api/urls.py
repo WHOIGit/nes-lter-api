@@ -16,6 +16,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
+    path('add-station-location/', views.AddStationLocation.as_view(), name='set-station-location'),
     path('add-nearest-stations/', views.AddNearestStations.as_view(), name='add-nearest-stations'),
     path('parse-ctd-hdr/', views.ParseHdrFile.as_view(), name='parse-ctd-hdr'),
     path('parse-ctd-btl/', views.ParseBtlFile.as_view(), name='parse-ctd-btl'),
