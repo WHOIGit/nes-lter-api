@@ -5,11 +5,12 @@ from django.utils.dateparse import parse_datetime
 import pandas as pd
 
 def parse_datetime_utc(time):
-    parsed = parse_datetime(time)
-    if not parsed:
-        raise ValueError(f"Invalid time {time}")
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=zoneinfo.ZoneInfo("UTC"))
+    try:
+        parsed = parse_datetime(time)
+        if parsed is not None and parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=zoneinfo.ZoneInfo("UTC"))
+    except ValueError:
+        return None    
     return parsed
 
 
