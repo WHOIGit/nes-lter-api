@@ -1,4 +1,4 @@
-from rest_framework.serializers import HyperlinkedModelSerializer, RelatedField, FloatField
+from rest_framework.serializers import HyperlinkedModelSerializer, RelatedField, FloatField, CharField, SerializerMethodField
 
 from api.models import Station, StationLocation
 
@@ -58,10 +58,19 @@ class StationField(RelatedField):
 
 
 class StationLocationWithDistanceSerializer(StationLocationSerializer):
-    distance = DistanceField(read_only=True)
-    station = StationField(read_only=True)
-    geolocation = GeolocationField(read_only=True)
+    distance = DistanceField(read_only='True')
+    station = StationField(read_only='True')
+    geolocation = GeolocationField(read_only='True')
+    depth = FloatField(read_only='True')
+    start_time = CharField(read_only='True')
+    end_time = CharField(read_only='True')
+    comment = CharField(read_only='True')
+
+    latitude = FloatField(allow_null=True, required=True, help_text="Enter latitude in decimal degrees, positive is North & negative is South (e.g., 41.03)")
+    longitude = FloatField(allow_null=True, required=True, help_text="Enter longitude in decimal degrees, positive is East & negative is West (e.g., -70.8833)")
+    timestamp = CharField(allow_null=True, required=False, max_length=19, help_text="Enter UTC timestamp (format: YYYY-MM-DD, YYYY-MM-DDThh:mm, YYYY-MM-DDThh:mm:ss)")
 
     class Meta:
         model = StationLocation
-        fields = ['id', 'station', 'geolocation', 'distance', 'depth', 'start_time', 'end_time', 'comment']
+        fields = ['id', 'station', 'geolocation', 'distance', 'depth', 'start_time', 'end_time',
+                  'comment', 'latitude', 'longitude', 'timestamp']
